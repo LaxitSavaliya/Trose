@@ -1,4 +1,4 @@
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useMemo, useCallback } from "react";
 import { Link } from "react-router-dom";
 import axios from "axios";
 
@@ -6,46 +6,58 @@ import GeneralContext from "./GeneralContext";
 import "./BuyActionWindow.css";
 
 const BuyActionWindow = ({ stock }) => {
+  const { closeWindow } = useContext(GeneralContext);
+
   const [stockQuantity, setStockQuantity] = useState(1);
   const [stockPrice, setStockPrice] = useState(stock.price);
   const [error, setError] = useState("");
-  const { closeWindow } = useContext(GeneralContext);
 
-  const minPrice = stock.price - 5;
-  const maxPrice = stock.price + 5;
+  const minPrice = useMemo(() => stock.price - 5, [stock.price]);
+  const maxPrice = useMemo(() => stock.price + 5, [stock.price]);
 
-  const handleCancelClick = () => {
+  const marginRequired = useMemo(
+    () => (stockQuantity * stockPrice).toFixed(2),
+    [stockQuantity, stockPrice]
+  );
+
+  const handleCancelClick = useCallback(() => {
     closeWindow();
-  };
+  }, [closeWindow]);
 
-  const handlePriceChange = (e) => {
-    const value = Number(e.target.value);
-    setStockPrice(value);
+  const handlePriceChange = useCallback(
+    (e) => {
+      const value = Number(e.target.value);
+      setStockPrice(value);
 
-    if (value < minPrice || value > maxPrice) {
-      setError(`You can only add value between ₹${minPrice} and ₹${maxPrice}`);
-    } else {
-      setError("");
-    }
-  };
+      if (value < minPrice || value > maxPrice) {
+        setError(`You can only set a price between ₹${minPrice} and ₹${maxPrice}`);
+      } else {
+        setError("");
+      }
+    },
+    [minPrice, maxPrice]
+  );
 
-  const handleBuyClick = () => {
+  const handleBuyClick = useCallback(async () => {
     if (error || stockQuantity < 1 || stockPrice <= 0) return;
 
-    axios.post("http://localhost:3002/neworder", {
-      name: stock.name,
-      qty: stockQuantity,
-      price: stockPrice,
-      mode: "BUY",
-    });
-    closeWindow();
-  };
-
-  const marginRequired = (stockQuantity * stockPrice).toFixed(2);
+    try {
+      await axios.post("http://localhost:3002/orders", {
+        name: stock.name,
+        qty: stockQuantity,
+        price: stockPrice,
+        mode: "BUY",
+      });
+      closeWindow();
+    } catch (err) {
+      console.error("Order submission failed:", err);
+      setError("Failed to place order. Please try again.");
+    }
+  }, [error, stockQuantity, stockPrice, stock.name, closeWindow]);
 
   return (
     <div className="container buy-modal" id="buy-window">
-      <div className="header" draggable="true">
+      <div className="header" draggable>
         <h3>
           Buy Order <span>({stock.name})</span>
         </h3>
@@ -58,9 +70,8 @@ const BuyActionWindow = ({ stock }) => {
             <input
               type="number"
               min="1"
-              placeholder="0"
-              onChange={(e) => setStockQuantity(Number(e.target.value))}
               value={stockQuantity}
+              onChange={(e) => setStockQuantity(Math.max(1, Number(e.target.value)))}
             />
           </fieldset>
 

@@ -1,62 +1,37 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+const api = axios.create({ baseURL: "http://localhost:3002" });
+
 const Orders = ({ tick }) => {
-  const [stocks, setStocks] = useState([]);
+  const [orders, setOrders] = useState([]);
 
   useEffect(() => {
-    const fetchData = async () => {
+    let isMounted = true;
+
+    const fetchOrders = async () => {
       try {
-        // Fetch orders and all stocks in parallel
-        const [ordersRes, allStockRes] = await Promise.all([
-          axios.get("http://localhost:3002/allorder"),
-          axios.get("http://localhost:3002/allstock"),
-        ]);
-
-        const orders = ordersRes.data;
-        const allStockData = allStockRes.data;
-
-        setStocks(orders);
-
-        // Create a map for instant stock lookup
-        const stockPriceMap = {};
-        allStockData.forEach(stock => {
-          stockPriceMap[stock.name] = stock.price;
-        });
-
-        // Filter orders that meet the buy condition
-        const eligibleOrders = orders.filter(order => {
-          const matchPrice = stockPriceMap[order.name];
-          if (matchPrice === undefined) return false;
-          const diff = matchPrice - order.price;
-          return Math.abs(diff) >= 2; // >=2 or <=-2
-        });
-
-        // Send POST requests in parallel (non-blocking)
-        if (eligibleOrders.length > 0) {
-          await Promise.all(
-            eligibleOrders.map(order =>
-              axios.post("http://localhost:3002/newholding", {
-                name: order.name,
-                qty: order.qty,
-                avg: order.price,
-              }).catch(err => console.error(`Post error for ${order.name}:`, err))
-            )
-          );
-          console.log(`✅ Posted ${eligibleOrders.length} new holdings`);
-        }
-
-      } catch (error) {
-        console.error("Error fetching data: ", error);
+        const { data } = await api.get("/orders");
+        if (isMounted) setOrders(data);
+      } catch (err) {
+        console.error("❌ Failed to fetch orders:", err);
       }
     };
 
-    fetchData();
+    fetchOrders();
+
+    return () => {
+      isMounted = false;
+    };
   }, [tick]);
+
+  if (!orders.length) {
+    return <p className="m-4">No orders found.</p>;
+  }
 
   return (
     <div className="m-4">
-      <h2 className="mb-4">Stock List</h2>
+      <h2 className="mb-4">Order List</h2>
       <table className="table border table-striped">
         <thead>
           <tr>
@@ -67,12 +42,12 @@ const Orders = ({ tick }) => {
           </tr>
         </thead>
         <tbody>
-          {stocks.map(stock => (
-            <tr key={stock._id}>
-              <td>{stock.name}</td>
-              <td>{stock.qty}</td>
-              <td>{stock.price}</td>
-              <td>{stock.mode}</td>
+          {orders.map(({ _id, name, qty, price, mode }) => (
+            <tr key={_id}>
+              <td>{name}</td>
+              <td>{qty}</td>
+              <td>{price.toFixed(2)}</td>
+              <td>{mode}</td>
             </tr>
           ))}
         </tbody>

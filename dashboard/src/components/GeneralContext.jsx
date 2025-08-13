@@ -1,34 +1,37 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 
 import BuyActionWindow from "./BuyActionWindow";
 import SellActionWindow from "./SellActionWindow";
 
 const GeneralContext = React.createContext(null);
 
-export const GeneralContextProvider = (props) => {
+export const GeneralContextProvider = ({ children }) => {
   const [isBuyWindowOpen, setIsBuyWindowOpen] = useState(false);
-  const [selectedStockUID, setSelectedStockUID] = useState({});
   const [isSellWindowOpen, setIsSellWindowOpen] = useState(false);
+  const [selectedStock, setSelectedStock] = useState(null);
 
-  const handleOpenBuyWindow = (stock) => {
+  const handleOpenBuyWindow = useCallback((stock) => {
+    setSelectedStock(stock);
     setIsBuyWindowOpen(true);
-    setSelectedStockUID(stock);
-  };
+  }, []);
 
-  const handleOpenSellWindow = (stock) => {
+  const handleOpenSellWindow = useCallback((stock) => {
+    setSelectedStock(stock);
     setIsSellWindowOpen(true);
-    setSelectedStockUID(stock);
-  };
+  }, []);
 
-  const  handleCloseWindows = () => {
+  const handleCloseWindows = useCallback(() => {
     setIsBuyWindowOpen(false);
     setIsSellWindowOpen(false);
-    setSelectedStockUID("");
-  };
+    setSelectedStock(null);
+  }, []);
 
   useEffect(() => {
-    document.body.style.overflow = isBuyWindowOpen || isSellWindowOpen ? "hidden" : "auto";
-    return () => (document.body.style.overflow = "auto");
+    document.body.style.overflow =
+      isBuyWindowOpen || isSellWindowOpen ? "hidden" : "auto";
+    return () => {
+      document.body.style.overflow = "auto";
+    };
   }, [isBuyWindowOpen, isSellWindowOpen]);
 
   return (
@@ -39,9 +42,10 @@ export const GeneralContextProvider = (props) => {
         closeWindow: handleCloseWindows,
       }}
     >
-      {props.children}
-      {isBuyWindowOpen && <BuyActionWindow stock={selectedStockUID} />}
-      {isSellWindowOpen && <SellActionWindow stock={selectedStockUID} />}
+      {children}
+
+      {isBuyWindowOpen && <BuyActionWindow stock={selectedStock} />}
+      {isSellWindowOpen && <SellActionWindow stock={selectedStock} />}
     </GeneralContext.Provider>
   );
 };

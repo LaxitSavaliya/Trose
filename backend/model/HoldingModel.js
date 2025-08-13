@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const HoldingSchema = new mongoose.Schema({
     name: String,
     qty: Number,
-    avg: Number,
+    orderPrice: Number,
     price: Number
 });
 

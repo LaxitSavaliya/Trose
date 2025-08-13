@@ -19,7 +19,6 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 
-
 const connectDB = async () => {
   try {
     await mongoose.connect(MONGO_URL);
@@ -30,7 +29,6 @@ const connectDB = async () => {
   }
 };
 
-
 const updatePrices = async () => {
   try {
     const stocks = await StockModel.find({});
@@ -40,11 +38,11 @@ const updatePrices = async () => {
     }
 
     const bulkUpdates = stocks.map(stock => {
-      const priceChange = Number((Math.random() - 0.5).toFixed(2));
+      const priceChange = Number((Math.random() * 2 - 1).toFixed(2));
       let newPrice = Number((stock.price + priceChange).toFixed(2));
 
-      if (newPrice <= 1) {
-        newPrice = 1.01;
+      if (newPrice <= 0.01) {
+        newPrice = 0.01;
       }
 
       return {
@@ -70,7 +68,6 @@ const updateHoldings = async () => {
     }
 
     const stocks = await StockModel.find();
-
     const stockPriceMap = new Map(stocks.map(stock => [stock.name, stock.price]));
 
     const bulkUpdates = holdings
@@ -84,12 +81,98 @@ const updateHoldings = async () => {
 
     if (bulkUpdates.length > 0) {
       await HoldingModel.bulkWrite(bulkUpdates);
-      console.log('Updated holdings.');
     } else {
       console.log('No holdings matched with current stock prices for an update.');
     }
   } catch (error) {
     console.error("Error updating holdings:", error);
+  }
+};
+
+const processOrders = async () => {
+  try {
+    function timeToSeconds(timeStr) {
+      const [hh, mm, ss] = timeStr.split(':').map(Number);
+      return hh * 3600 + mm * 60 + ss;
+    }
+
+    const currentTime = new Date();
+    const currentSeconds = currentTime.getHours() * 3600 + currentTime.getMinutes() * 60 + currentTime.getSeconds();
+
+    const orders = await OrderModel.find();
+    const ordersToProcess = orders.filter(order => {
+      const orderSeconds = timeToSeconds(order.createdAt);
+      return currentSeconds >= orderSeconds + 30;
+    });
+
+
+    for (const order of ordersToProcess) {
+      try {
+        if (order.mode === "BUY") {
+          const stock = await StockModel.findOne({ name: order.name });
+
+          if (!stock) {
+            console.error(`Stock '${order.name}' not found. Cannot process BUY order.`);
+            await OrderModel.deleteOne({ _id: order._id });
+            continue;
+          }
+
+          const existingHolding = await HoldingModel.findOne({ name: order.name });
+
+          if (existingHolding) {
+            const totalCost = (existingHolding.qty * existingHolding.avg) + (order.qty * order.price);
+            const newQty = existingHolding.qty + order.qty;
+            const newAvgPrice = totalCost / newQty;
+
+            await HoldingModel.findByIdAndUpdate(
+              existingHolding._id,
+              { $set: { qty: newQty, orderPrice: newAvgPrice } }
+            );
+          } else {
+            const newHolding = new HoldingModel({
+              name: order.name,
+              qty: order.qty,
+              orderPrice: order.price,
+              price: stock.price,
+            });
+            await newHolding.save();
+          }
+
+        } else if (order.mode === "SELL") {
+          const holding = await HoldingModel.findOne({ name: order.name });
+
+          if (!holding) {
+            console.error(`No holdings found for '${order.name}'. Cannot process SELL order.`);
+            await OrderModel.deleteOne({ _id: order._id });
+            continue;
+          }
+
+          const newQty = holding.qty - order.qty;
+
+          if (newQty < 0) {
+            console.error(`Insufficient holdings (${holding.qty} units) for SELL order of ${order.qty} units.`);
+            await OrderModel.deleteOne({ _id: order._id });
+            continue;
+          }
+
+          if (newQty === 0) {
+            await HoldingModel.deleteOne({ _id: holding._id });
+          } else {
+            holding.qty = newQty;
+            await holding.save();
+          }
+        }
+
+        await OrderModel.deleteOne({ _id: order._id });
+        console.log(`✅ Order for ${order.name} processed and removed from orders.`);
+
+      } catch (innerError) {
+        console.error(`Error processing order ${order._id}:`, innerError);
+      }
+    }
+
+  } catch (error) {
+    console.error("Error processing orders:", error);
   }
 };
 
@@ -118,36 +201,6 @@ app.get('/holdings', async (req, res) => {
   }
 });
 
-app.post('/holdings', async (req, res) => {
-  try {
-    const { name, qty, avg } = req.body;
-    if (!name || !qty || !avg) {
-      return res.status(400).json({ message: "All fields (name, qty, avg) are required." });
-    }
-
-    const quantity = Number(qty);
-    const averagePrice = Number(avg);
-
-    const stock = await StockModel.findOne({ name });
-    if (!stock) {
-      return res.status(404).json({ message: `Stock with name '${name}' not found.` });
-    }
-
-    const newHolding = new HoldingModel({
-      name,
-      qty: quantity,
-      avg: averagePrice,
-      price: stock.price
-    });
-    await newHolding.save();
-
-    res.status(201).json({ message: "Holding created successfully.", holding: newHolding });
-  } catch (error) {
-    console.error("Error creating holding:", error);
-    res.status(500).json({ message: "Failed to create holding.", error: error.message });
-  }
-});
-
 app.get('/positions', async (req, res) => {
   try {
     const positions = await PositionModel.find({});
@@ -155,28 +208,6 @@ app.get('/positions', async (req, res) => {
   } catch (err) {
     console.error("Error fetching positions:", err);
     res.status(500).json({ message: "Failed to fetch positions.", error: err.message });
-  }
-});
-
-app.post('/orders', async (req, res) => {
-  try {
-    const { name, qty, price, mode } = req.body;
-    if (!name || !qty || !price || !mode) {
-      return res.status(400).json({ message: "All fields (name, qty, price, mode) are required." });
-    }
-
-    const newOrder = new OrderModel({
-      name,
-      qty: Number(qty),
-      price: Number(price),
-      mode
-    });
-    await newOrder.save();
-
-    res.status(201).json({ message: "Order created successfully.", order: newOrder });
-  } catch (error) {
-    console.error("Error creating order:", error);
-    res.status(500).json({ message: "Failed to create order.", error: error.message });
   }
 });
 
@@ -190,18 +221,42 @@ app.get('/orders', async (req, res) => {
   }
 });
 
+app.post('/orders', async (req, res) => {
+  try {
+    const { name, qty, price, mode } = req.body;
+
+    if (!name || !qty || !price || !mode) {
+      return res.status(400).json({ message: "All fields (name, qty, price, mode) are required." });
+    }
+
+    const quantity = Number(qty);
+    const stockPrice = Number(price);
+
+    if (quantity <= 0 || stockPrice <= 0) {
+      return res.status(400).json({ message: "Quantity and price must be positive numbers." });
+    }
+
+    const newOrder = new OrderModel({
+      name,
+      qty: quantity,
+      price: stockPrice,
+      mode
+    });
+    await newOrder.save();
+
+    res.status(201).json({ message: "Order created successfully.", order: newOrder });
+  } catch (error) {
+    console.error("Error creating order:", error);
+    res.status(500).json({ message: "Failed to create order.", error: error.message });
+  }
+});
 
 const startServer = async () => {
   await connectDB();
-  (function runUpdatePrices() {
-    updatePrices();
-    setTimeout(runUpdatePrices, 1000);
-  })();
 
-  (function runUpdateHoldings() {
-    updateHoldings();
-    setTimeout(runUpdateHoldings, 1000);
-  })();
+  // setInterval(updatePrices, 1000);
+  // setInterval(updateHoldings, 1000);
+  // setInterval(processOrders, 1000);
 
   app.listen(PORT, () => {
     console.log(`🚀 App started at http://localhost:${PORT}`);
