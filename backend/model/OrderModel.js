@@ -1,7 +1,12 @@
-const {model} = require('mongoose');
+const mongoose = require('mongoose');
 
-const {OrderSchema} = require('../schemas/OrderSchema');
+const OrderSchema = new mongoose.Schema({
+    name: String,
+    qty: Number,
+    price: Number,
+    mode: String
+});
 
-const OrderModel = new model('order', OrderSchema);
+const OrderModel = mongoose.model('order', OrderSchema);
 
-module.exports = {OrderModel};
+module.exports = OrderModel;

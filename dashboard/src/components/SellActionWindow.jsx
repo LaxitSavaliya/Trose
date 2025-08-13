@@ -5,11 +5,19 @@ import axios from "axios";
 import GeneralContext from "./GeneralContext";
 import "./BuyActionWindow.css"; // Assuming shared styles for buy/sell
 
-const SellActionWindow = ({ list }) => {
-  const availableQty = list.qty || 0;
+const SellActionWindow = ({ stock }) => {
+  const [availableQty, setAvailableQty] = useState(null);
   const [stockQuantity, setStockQuantity] = useState(1);
-  const [stockPrice, setStockPrice] = useState(list.price);
+  const [stockPrice, setStockPrice] = useState(stock.price);
   const { closeWindows } = useContext(GeneralContext); // fixed method name
+
+  useEffect(() => {
+      axios.get("http://localhost:3002/allholding").then((res) => {
+        const stockData = res.data;
+        const found = stockData.find(item => item.name === stock.name);
+        setAvailableQty(found ? found.qty : 0);
+      });
+    }, [stock.name]);
 
   const handleCancelClick = () => {
     closeWindows();
@@ -22,25 +30,20 @@ const SellActionWindow = ({ list }) => {
     }
 
     axios.post("http://localhost:3002/neworder", {
-      name: list.name,
+      name: stock.name,
       qty: stockQuantity,
       price: stockPrice,
-      currPrice: list.price,
+      currPrice: stock.price,
       mode: "SELL",
     });
     closeWindows();
   };
 
-  useEffect(() => {
-    setStockPrice(list.price || 0);
-    setStockQuantity(1);
-  }, [list]);
-
   return (
     <div className="container buy-modal" id="sell-window">
       <div className="header" draggable="true">
         <h3>
-          Sell Order <span>({list.name})</span>
+          Sell Order <span>({stock.name})</span>
         </h3>
       </div>
 

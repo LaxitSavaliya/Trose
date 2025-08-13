@@ -1,35 +1,48 @@
 import SearchIcon from "@mui/icons-material/Search";
-import { watchlist } from "../data/data";
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import { Tooltip } from "@mui/material";
-import { useState, useContext } from "react";
+import { useState, useContext, useEffect } from "react";
 import EqualizerIcon from "@mui/icons-material/Equalizer";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import GeneralContext from "./GeneralContext";
 import { DoughnutChart } from "./DoughnoutChart";
+import axios, { all } from "axios";
 
-function WatchList() {
+function WatchList({tick}) {
+  const[allStock, setAllStock] = useState([]);
   const [enter, setEnter] = useState(null);
 
   const generalContext = useContext(GeneralContext);
 
-  const handleBuyClick = (list) => {
-    generalContext.openBuyWindow(list);
+  useEffect(() => {
+    const fetchStock = async () => {
+      try {
+    const res = await axios.get("http://localhost:3002/stocks");
+      setAllStock(res.data);
+    } catch(error) {
+      console.log(error);
+    }
+  };
+  fetchStock();
+  }, [tick]);
+
+  const handleBuyClick = (stock) => {
+    generalContext.openBuyWindow(stock);
   };
 
-  const handleSellClick = (list) => {
-    generalContext.openSellWindow(list);
+  const handleSellClick = (stock) => {
+    generalContext.openSellWindow(stock);
   }
 
-  const labels = watchlist.map((subArry) => subArry['name']);
+  const labels = allStock.map((stock) => stock['name']);
 
   const data = {
     labels,
     datasets: [
       {
         label : 'Price',
-        data: watchlist.map((stock) => stock.price),
+        data: allStock.map((stock) => stock.price),
         backgroundColor: [
         'rgba(255, 99, 132, 0.5)',
         'rgba(54, 162, 235, 0.5)',
@@ -53,7 +66,7 @@ function WatchList() {
 
   return (
     <>
-      <div className="position-relative w-100 ms-2">
+      <div className="position-relative w-100 ms-1">
         <SearchIcon className="position-absolute top-50 start-0 translate-middle-y ms-3 fs-5 text-muted" />
 
         <input
@@ -69,16 +82,16 @@ function WatchList() {
           className="position-absolute top-50 end-0 translate-middle-y me-3 m-0 text-muted"
           style={{ fontSize: "14px" }}
         >
-          {watchlist.length}/50
+          {allStock.length}/50
         </p>
       </div>
 
-      {watchlist.map((watch, i) => (
+      {allStock.map((stock) => (
         <div
-          key={i}
-          onMouseEnter={() => setEnter(i)}
+          key={stock._id}
+          onMouseEnter={() => setEnter(stock._id)}
           onMouseLeave={() => setEnter(null)}
-          className="ms-2 ps-3 border pt-3"
+          className="ms-1 ps-3 border pt-3"
           style={{ width: "98%" }}
         >
           <div className="d-flex justify-content-between">
@@ -86,41 +99,48 @@ function WatchList() {
               style={{ fontSize: "14px" }}
               className={`w-50
                   ${
-                    ((parseFloat(watch.percent) * watch.price) / 100).toFixed(
-                      2
-                    ) > 0
+                    (stock.price - stock.initialprice) >= 0
                       ? "text-success"
                       : "text-danger"
                   }`}
             >
-              {watch.name}
+              {stock.name}
             </p>
             <div style={{ fontSize: "13px" }} className="w-50 text-end d-flex">
-              <p className="w-25">
-                {((parseFloat(watch.percent) * watch.price) / 100).toFixed(2)}
+              <p className={`w-25 ${
+                    (stock.price - stock.initialprice) >= 0
+                      ? "text-success"
+                      : "text-danger"
+                  }`}>
+                {(stock.price - stock.initialprice).toFixed(2)}
               </p>
-              <p className="w-25">{watch.percent}</p>
+              <p className={`w-25 ${
+                    (stock.price - stock.initialprice) >= 0
+                      ? "text-success"
+                      : "text-danger"
+                  }`}>{(((stock.price - stock.initialprice)*100)/stock.initialprice).toFixed(2)}</p>
               <p
                 style={{ width: "15%" }}
                 className={`
                   ${
-                    ((parseFloat(watch.percent) * watch.price) / 100).toFixed(
-                      2
-                    ) > 0
+                    (stock.price - stock.initialprice) >= 0
                       ? "text-success"
                       : "text-danger"
                   }`}
               >
-                {((parseFloat(watch.percent) * watch.price) / 100).toFixed(2) >
-                0 ? (
+                {(stock.price - stock.initialprice) >= 0 ? (
                   <KeyboardArrowUpIcon />
                 ) : (
                   <KeyboardArrowDownIcon />
                 )}
               </p>
-              <p className="w-25">{watch.price}</p>
+              <p className={`w-25 ${
+                    (stock.price - stock.initialprice) >= 0
+                      ? "text-success"
+                      : "text-danger"
+                  }`}>{stock.price}</p>
             </div>
-            {enter === i ? (
+            {enter === stock._id ? (
               <div
                 className="position-absolute"
                 style={{ marginLeft: "240px" }}
@@ -128,14 +148,14 @@ function WatchList() {
                 <Tooltip
                   title="Buy (B)"
                   placement="top"
-                  onClick={() => handleBuyClick(watch)}
+                  onClick={() => handleBuyClick(stock)}
                 >
-                  <button className="px-3 me-2 bg-primary text-white rounded">
+                  <button className="px-3 me-2 bg-success text-white rounded">
                     B
                   </button>
                 </Tooltip>
                 <Tooltip title="Sell (S)" placement="top"
-                onClick={() => handleSellClick(watch)}
+                onClick={() => handleSellClick(stock)}
                 >
                   <button className="px-3 me-2 bg-danger  text-white rounded">
                     S
