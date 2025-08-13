@@ -254,9 +254,9 @@ app.post('/orders', async (req, res) => {
 const startServer = async () => {
   await connectDB();
 
-  // setInterval(updatePrices, 1000);
-  // setInterval(updateHoldings, 1000);
-  // setInterval(processOrders, 1000);
+  setInterval(updatePrices, 1000);
+  setInterval(updateHoldings, 1000);
+  setInterval(processOrders, 1000);
 
   app.listen(PORT, () => {
     console.log(`🚀 App started at http://localhost:${PORT}`);
