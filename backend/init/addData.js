@@ -2,6 +2,8 @@ const mongoose = require('mongoose');
 const { initialStocks, initialPositions } = require('./data');
 const StockModel = require('../model/StockModel');
 const PositionModel = require('../model/PositionModel');
+const HoldingModel = require('../model/HoldingModel');
+const OrderModel = require('../model/OrderModel');
 require('dotenv').config({ path: '../.env' });
 
 const dbUrl = process.env.MONGO_URL;
@@ -24,6 +26,12 @@ async function seedDatabase() {
 
         await PositionModel.deleteMany({});
         console.log('🗑️ Deleted old Position data');
+
+        await HoldingModel.deleteMany({});
+        console.log('🗑️ Deleted old Holding data');
+
+        await OrderModel.deleteMany({});
+        console.log('🗑️ Deleted old Order data');
 
         await StockModel.insertMany(initialStocks);
         console.log(`📊 Stocks Data was initialized`);

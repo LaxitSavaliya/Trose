@@ -1,6 +1,6 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import { AiOutlineStock } from "react-icons/ai";
+import AutoGraphIcon from '@mui/icons-material/AutoGraph';
 
 const watchlist = [
   { name: "NIFTY 50", price: "22,500.50", percent: "+0.52%", isDown: false },
@@ -25,8 +25,8 @@ const Navbar = () => {
       <div className="container-fluid px-3">
         <div className="d-flex align-items-center">
           <Link className="navbar-brand d-flex align-items-center" to="/">
-            <AiOutlineStock size={30} className="me-2 text-white" />
-            <span className="fw-bold fs-5 text-white">Your App</span>
+            <AutoGraphIcon size={30} className="me-2 text-white fs-2" />
+            <span className="fw-bold fs-5 text-white">Trose</span>
           </Link>
           <button
             className="navbar-toggler ms-2"
@@ -60,11 +60,10 @@ const Navbar = () => {
               {navLinks.map((item, index) => (
                 <li className="nav-item" key={index}>
                   <Link
-                    className={`nav-link ${
-                      location.pathname === item.link
-                        ? "text-white fw-bold" // Active link is bold white
+                    className={`nav-link ${location.pathname === item.link
+                        ? "text-white fw-bold"
                         : "text-dark"
-                    }`}
+                      }`}
                     to={item.link}
                   >
                     {item.text}

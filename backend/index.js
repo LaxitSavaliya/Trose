@@ -38,7 +38,7 @@ const updatePrices = async () => {
     }
 
     const bulkUpdates = stocks.map(stock => {
-      const priceChange = Number((Math.random() * 2 - 1).toFixed(2));
+      const priceChange = Number((Math.random() * 0.6 - 0.3).toFixed(2));
       let newPrice = Number((stock.price + priceChange).toFixed(2));
 
       if (newPrice <= 0.01) {
@@ -120,7 +120,7 @@ const processOrders = async () => {
           const existingHolding = await HoldingModel.findOne({ name: order.name });
 
           if (existingHolding) {
-            const totalCost = (existingHolding.qty * existingHolding.avg) + (order.qty * order.price);
+            const totalCost = (existingHolding.qty * existingHolding.orderPrice) + (order.qty * order.price);
             const newQty = existingHolding.qty + order.qty;
             const newAvgPrice = totalCost / newQty;
 
@@ -181,45 +181,23 @@ app.get("/", (req, res) => {
   res.send("Hello, Traders 👋");
 });
 
-app.get('/stocks', async (req, res) => {
-  try {
-    const stocks = await StockModel.find({});
-    res.json(stocks);
-  } catch (err) {
-    console.error("Error fetching stocks:", err);
-    res.status(500).json({ message: "Failed to fetch stocks.", error: err.message });
-  }
-});
+const createRoute = (path, model) => {
+  app.get(path, async (req, res) => {
+    try {
+      const data = await model.find({});
+      res.json(data);
+    } catch (err) {
+      console.error(`Error fetching ${path.slice(1)}:`, err);
+      res.status(500).json({ message: `Failed to fetch ${path.slice(1)}.`, error: err.message });
+    }
+  });
+};
 
-app.get('/holdings', async (req, res) => {
-  try {
-    const holdings = await HoldingModel.find({});
-    res.json(holdings);
-  } catch (err) {
-    console.error("Error fetching holdings:", err);
-    res.status(500).json({ message: "Failed to fetch holdings.", error: err.message });
-  }
-});
+createRoute('/stocks', StockModel);
+createRoute('/holdings', HoldingModel);
+createRoute('/positions', PositionModel);
+createRoute('/orders', OrderModel);
 
-app.get('/positions', async (req, res) => {
-  try {
-    const positions = await PositionModel.find({});
-    res.json(positions);
-  } catch (err) {
-    console.error("Error fetching positions:", err);
-    res.status(500).json({ message: "Failed to fetch positions.", error: err.message });
-  }
-});
-
-app.get('/orders', async (req, res) => {
-  try {
-    const orders = await OrderModel.find({});
-    res.json(orders);
-  } catch (err) {
-    console.error("Error fetching orders:", err);
-    res.status(500).json({ message: "Failed to fetch orders.", error: err.message });
-  }
-});
 
 app.post('/orders', async (req, res) => {
   try {

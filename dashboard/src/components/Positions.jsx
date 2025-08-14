@@ -1,57 +1,64 @@
-import React, { useState ,useEffect } from "react";
-import axios, { all } from "axios";
+import { useState, useEffect } from "react";
+import axios from "axios";
 
 const Positions = () => {
-  const [positions, setPositions] = useState([])
+  const [positions, setPositions] = useState([]);
 
   useEffect(() => {
-    axios.get("http://localhost:3002/allposition").then((res) => {
+    axios.get("http://localhost:3002/positions").then((res) => {
       setPositions(res.data);
     });
   }, []);
 
+  if (!positions.length) {
+    return (
+      <div className="m-4 p-4 bg-light rounded shadow-sm text-center">
+        <h5 className="text-muted">No Positions Found</h5>
+      </div>
+    );
+  }
+
   return (
-    <>
-      <h3 className="">Positions ({positions.length})</h3>
+    <div className="m-4">
+      <h3 className="mb-3">Positions ({positions.length})</h3>
 
-      <div>
-        <table className="table border">
-          <thead>
-          <tr>
-            <th>Product</th>
-            <th>Instrument</th>
-            <th>Qty.</th>
-            <th>Avg.</th>
-            <th>LTP</th>
-            <th>P&L</th>
-            <th>Chg.</th>
-          </tr>
+      <div className="table-responsive shadow-sm rounded-3">
+        <table className="table table-striped table-hover mb-0">
+          <thead className="table-dark">
+            <tr>
+              <th>Product</th>
+              <th>Instrument</th>
+              <th>Qty.</th>
+              <th>Avg.</th>
+              <th>LTP</th>
+              <th>P&L</th>
+              <th>Change</th>
+            </tr>
           </thead>
-          {positions.map((stock, index) => {
-            const curValue = stock.price * stock.qty;
-            const isProfit = curValue - stock.avg * stock.qty >= 0.0;
-            const profClass = isProfit ? "text-primary" : "text-danger";
-            const dayClass = stock.isLoss ? "text-danger" : "text-primary";
+          <tbody>
+            {positions.map((stock, index) => {
+              const curValue = stock.price * stock.qty;
+              const profitLoss = curValue - stock.avg * stock.qty;
+              const isProfit = profitLoss >= 0;
+              const profClass = isProfit ? "text-success" : "text-danger";
+              const dayClass = stock.isLoss ? "text-danger" : "text-success";
 
-            return (
-              <tbody>
-              <tr key={index}>
-                <td>{stock.product}</td>
-                <td>{stock.name}</td>
-                <td>{stock.qty}</td>
-                <td>{stock.avg.toFixed(2)}</td>
-                <td>{stock.price.toFixed(2)}</td>
-                <td className={profClass}>
-                  {(curValue - stock.avg * stock.qty).toFixed(2)}
-                </td>
-                <td className={dayClass}>{stock.day}</td>
-              </tr>
-              </tbody>
-            );
-          })}
+              return (
+                <tr key={index}>
+                  <td>{stock.product}</td>
+                  <td>{stock.name}</td>
+                  <td>{stock.qty}</td>
+                  <td>{stock.avg.toFixed(2)}</td>
+                  <td>{stock.price.toFixed(2)}</td>
+                  <td className={profClass}>{profitLoss.toFixed(2)}</td>
+                  <td className={dayClass}>{stock.day}</td>
+                </tr>
+              );
+            })}
+          </tbody>
         </table>
       </div>
-    </>
+    </div>
   );
 };
 

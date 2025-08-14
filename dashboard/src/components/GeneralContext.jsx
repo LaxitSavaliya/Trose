@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useCallback } from "react";
-
 import BuyActionWindow from "./BuyActionWindow";
 import SellActionWindow from "./SellActionWindow";
 
@@ -10,17 +9,17 @@ export const GeneralContextProvider = ({ children }) => {
   const [isSellWindowOpen, setIsSellWindowOpen] = useState(false);
   const [selectedStock, setSelectedStock] = useState(null);
 
-  const handleOpenBuyWindow = useCallback((stock) => {
+  const openBuyWindow = useCallback((stock) => {
     setSelectedStock(stock);
     setIsBuyWindowOpen(true);
   }, []);
 
-  const handleOpenSellWindow = useCallback((stock) => {
+  const openSellWindow = useCallback((stock) => {
     setSelectedStock(stock);
     setIsSellWindowOpen(true);
   }, []);
 
-  const handleCloseWindows = useCallback(() => {
+  const closeWindow = useCallback(() => {
     setIsBuyWindowOpen(false);
     setIsSellWindowOpen(false);
     setSelectedStock(null);
@@ -29,6 +28,7 @@ export const GeneralContextProvider = ({ children }) => {
   useEffect(() => {
     document.body.style.overflow =
       isBuyWindowOpen || isSellWindowOpen ? "hidden" : "auto";
+
     return () => {
       document.body.style.overflow = "auto";
     };
@@ -37,15 +37,30 @@ export const GeneralContextProvider = ({ children }) => {
   return (
     <GeneralContext.Provider
       value={{
-        openBuyWindow: handleOpenBuyWindow,
-        openSellWindow: handleOpenSellWindow,
-        closeWindow: handleCloseWindows,
+        openBuyWindow,
+        openSellWindow,
+        closeWindow,
       }}
     >
       {children}
 
-      {isBuyWindowOpen && <BuyActionWindow stock={selectedStock} />}
-      {isSellWindowOpen && <SellActionWindow stock={selectedStock} />}
+      {isBuyWindowOpen && selectedStock && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.4)", zIndex: 1050 }}
+        >
+          <BuyActionWindow stock={selectedStock} />
+        </div>
+      )}
+
+      {isSellWindowOpen && selectedStock && (
+        <div
+          className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+          style={{ backgroundColor: "rgba(0,0,0,0.4)", zIndex: 1050 }}
+        >
+          <SellActionWindow stock={selectedStock} />
+        </div>
+      )}
     </GeneralContext.Provider>
   );
 };

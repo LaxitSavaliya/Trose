@@ -11,19 +11,28 @@ import { DoughnutChart } from "./DoughnoutChart";
 
 function WatchList({ tick }) {
   const [allStock, setAllStock] = useState([]);
+  const [searchTerm, setSearchTerm] = useState("");
   const [hoveredId, setHoveredId] = useState(null);
 
   const generalContext = useContext(GeneralContext);
 
   useEffect(() => {
-    axios.get("http://localhost:3002/stocks")
-      .then(res => setAllStock(res.data))
+    axios
+      .get("http://localhost:3002/stocks")
+      .then((res) => setAllStock(res.data))
       .catch(console.error);
   }, [tick]);
 
+  const filteredStock = useMemo(() => {
+    if (!searchTerm) return allStock;
+    return allStock.filter((stock) =>
+      stock.name.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [searchTerm, allStock]);
+
   const chartData = useMemo(() => {
-    const labels = allStock.map(stock => stock.name);
-    const prices = allStock.map(stock => stock.price);
+    const labels = filteredStock.map((stock) => stock.name);
+    const prices = filteredStock.map((stock) => stock.price);
     return {
       labels,
       datasets: [
@@ -50,36 +59,55 @@ function WatchList({ tick }) {
         }
       ]
     };
-  }, [allStock]);
+  }, [filteredStock]);
 
-  const handleBuyClick = useCallback(stock => {
-    generalContext.openBuyWindow(stock);
-  }, [generalContext]);
+  const handleBuyClick = useCallback(
+    (stock) => generalContext.openBuyWindow(stock),
+    [generalContext]
+  );
 
-  const handleSellClick = useCallback(stock => {
-    generalContext.openSellWindow(stock);
-  }, [generalContext]);
+  const handleSellClick = useCallback(
+    (stock) => generalContext.openSellWindow(stock),
+    [generalContext]
+  );
 
   return (
     <>
-      <div className="position-relative w-100 ms-1">
-        <SearchIcon className="position-absolute top-50 start-0 translate-middle-y ms-3 fs-5 text-muted" />
+      <div
+        className="d-flex align-items-center m-1 rounded-3"
+        style={{ border: "2px solid #ccc" }}
+      >
+        <label
+          htmlFor="stock"
+          style={{
+            padding: "8px 10px",
+            backgroundColor: "#ccc",
+            borderTopLeftRadius: "6px",
+            borderBottomLeftRadius: "6px",
+            cursor: "pointer"
+          }}
+        >
+          <SearchIcon className="fs-3" />
+        </label>
         <input
+          id="stock"
           type="text"
           name="search"
-          placeholder="Search eg: infy, bse, nifty fut weekly, gold mcx"
-          className="ps-5 pe-5 py-2 shadow-none"
-          style={{ width: "98%" }}
+          placeholder="Search using stock name..."
+          className="fw-semibold"
+          style={{
+            width: "98%",
+            border: "none",
+            outline: "none",
+            fontSize: "17px",
+            padding: "0 0 0 10px"
+          }}
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
         />
-        <p
-          className="position-absolute top-50 end-0 translate-middle-y me-3 m-0 text-muted"
-          style={{ fontSize: "14px" }}
-        >
-          {allStock.length}/50
-        </p>
       </div>
 
-      {allStock.map(stock => {
+      {filteredStock.map((stock) => {
         const priceDiff = stock.price - stock.initialprice;
         const pricePercent = (priceDiff * 100) / stock.initialprice;
         const isUp = priceDiff >= 0;
@@ -90,24 +118,24 @@ function WatchList({ tick }) {
             key={stock._id}
             onMouseEnter={() => setHoveredId(stock._id)}
             onMouseLeave={() => setHoveredId(null)}
-            className="ms-1 ps-3 border pt-3 position-relative"
+            className="ms-1 ps-3 border pt-3 position-relative m-1 rounded-3 bg-white shadow-sm"
             style={{ width: "98%" }}
           >
             <div className="d-flex justify-content-between">
-              <p className={`w-50 ${textClass}`} style={{ fontSize: "14px" }}>
+              <p className={`w-50 ${textClass} fw-semibold`} style={{ fontSize: "15px" }}>
                 {stock.name}
               </p>
-              <div style={{ fontSize: "13px" }} className="w-50 text-end d-flex">
-                <p className={`w-25 ${textClass}`}>{priceDiff.toFixed(2)}</p>
-                <p className={`w-25 ${textClass}`}>{pricePercent.toFixed(2)}</p>
-                <p style={{ width: "15%" }} className={textClass}>
+              <div style={{ fontSize: "13.2px" }} className="w-50 text-end d-flex">
+                <p className={`w-25 ${textClass} fw-semibold`}>{priceDiff.toFixed(2)}</p>
+                <p className={`w-25 ${textClass} fw-semibold`}>{pricePercent.toFixed(2)}</p>
+                <p style={{ width: "15%" }} className={`${textClass} fw-semibold`}>
                   {isUp ? <KeyboardArrowUpIcon /> : <KeyboardArrowDownIcon />}
                 </p>
-                <p className={`w-25 ${textClass}`}>{stock.price}</p>
+                <p className={`w-25 ${textClass} fw-semibold`}>{stock.price}</p>
               </div>
 
               {hoveredId === stock._id && (
-                <div className="position-absolute" style={{ marginLeft: "240px" }}>
+                <div className="position-absolute" style={{ right: "20px" }}>
                   <Tooltip title="Buy (B)" placement="top">
                     <button
                       className="px-3 me-2 bg-success text-white rounded"

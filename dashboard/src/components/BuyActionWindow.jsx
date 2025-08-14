@@ -1,28 +1,25 @@
-import React, { useState, useContext, useMemo, useCallback } from "react";
-import { Link } from "react-router-dom";
+import { useState, useContext, useMemo, useCallback, useEffect } from "react";
 import axios from "axios";
-
 import GeneralContext from "./GeneralContext";
-import "./BuyActionWindow.css";
 
 const BuyActionWindow = ({ stock }) => {
   const { closeWindow } = useContext(GeneralContext);
 
-  const [stockQuantity, setStockQuantity] = useState(1);
-  const [stockPrice, setStockPrice] = useState(stock.price);
+  const [stockQuantity, setStockQuantity] = useState("");
+  const [stockPrice, setStockPrice] = useState(null);
   const [error, setError] = useState("");
+
+  useEffect(() => setStockPrice(stock.price), [stock.price]);
 
   const minPrice = useMemo(() => stock.price - 5, [stock.price]);
   const maxPrice = useMemo(() => stock.price + 5, [stock.price]);
 
   const marginRequired = useMemo(
-    () => (stockQuantity * stockPrice).toFixed(2),
+    () => (stockQuantity && stockPrice ? (stockQuantity * stockPrice).toFixed(2) : 0),
     [stockQuantity, stockPrice]
   );
 
-  const handleCancelClick = useCallback(() => {
-    closeWindow();
-  }, [closeWindow]);
+  const handleCancelClick = useCallback(() => closeWindow(), [closeWindow]);
 
   const handlePriceChange = useCallback(
     (e) => {
@@ -30,7 +27,7 @@ const BuyActionWindow = ({ stock }) => {
       setStockPrice(value);
 
       if (value < minPrice || value > maxPrice) {
-        setError(`You can only set a price between ₹${minPrice} and ₹${maxPrice}`);
+        setError(`Price must be between ₹${minPrice} and ₹${maxPrice}`);
       } else {
         setError("");
       }
@@ -56,55 +53,54 @@ const BuyActionWindow = ({ stock }) => {
   }, [error, stockQuantity, stockPrice, stock.name, closeWindow]);
 
   return (
-    <div className="container buy-modal" id="buy-window">
-      <div className="header" draggable>
-        <h3>
-          Buy Order <span>({stock.name})</span>
-        </h3>
-      </div>
+    <div
+      className="position-fixed top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center"
+      style={{ backgroundColor: "rgba(0,0,0,0.4)", zIndex: 1050 }}
+    >
+      <div className="bg-white p-4 rounded-3 shadow" style={{ maxWidth: "400px", width: "90%" }}>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="m-0">Buy Order <span className="text-secondary">({stock.name})</span></h5>
+          <button className="btn btn-light btn-sm" onClick={handleCancelClick}>✕</button>
+        </div>
 
-      <div className="regular-order">
-        <div className="inputs">
-          <fieldset>
-            <legend>Qty.</legend>
+        <div className="mb-3">
+          <div className="mb-3">
+            <label className="form-label fw-bold">Quantity</label>
             <input
               type="number"
-              min="1"
+              className="form-control"
+              placeholder="0"
               value={stockQuantity}
-              onChange={(e) => setStockQuantity(Math.max(1, Number(e.target.value)))}
+              onChange={(e) => setStockQuantity(e.target.value)}
             />
-          </fieldset>
-
-          <fieldset>
-            <legend>Price</legend>
+          </div>
+          <div className="mb-2">
+            <label className="form-label fw-bold">Price</label>
             <input
               type="number"
+              className={`form-control ${error ? "border-danger" : ""}`}
               value={stockPrice}
               onChange={handlePriceChange}
             />
-          </fieldset>
+            {error && <small className="text-danger">{error}</small>}
+          </div>
+          <small className="text-muted">Allowed range: ₹{minPrice} - ₹{maxPrice}</small>
         </div>
 
-        {error && <p style={{ color: "red", marginTop: "5px" }}>{error}</p>}
-      </div>
-
-      <div className="buttons">
-        <span>Margin required ₹{marginRequired}</span>
-        <div>
-          <Link
-            to="#"
-            className={`btn btn-primary me-3 ${error ? "disabled" : ""}`}
-            onClick={handleBuyClick}
-          >
-            Buy
-          </Link>
-          <Link
-            to="#"
-            className="btn btn-secondary"
-            onClick={handleCancelClick}
-          >
-            Cancel
-          </Link>
+        <div className="d-flex justify-content-between align-items-center mt-4">
+          <span className="fw-semibold">Margin: ₹{marginRequired}</span>
+          <div className="d-flex gap-2">
+            <button
+              className="btn btn-primary"
+              onClick={handleBuyClick}
+              disabled={!!error || !stockQuantity || !stockPrice}
+            >
+              Buy
+            </button>
+            <button className="btn btn-secondary" onClick={handleCancelClick}>
+              Cancel
+            </button>
+          </div>
         </div>
       </div>
     </div>
