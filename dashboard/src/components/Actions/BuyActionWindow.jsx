@@ -1,6 +1,6 @@
 import { useState, useContext, useMemo, useCallback, useEffect } from "react";
 import axios from "axios";
-import GeneralContext from "./GeneralContext";
+import GeneralContext from "../../Context/GeneralContext";
 
 const BuyActionWindow = ({ stock }) => {
   const { closeWindow } = useContext(GeneralContext);

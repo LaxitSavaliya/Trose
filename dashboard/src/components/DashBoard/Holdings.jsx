@@ -1,7 +1,7 @@
 import { useContext, useState, useEffect, useMemo, useCallback } from "react";
 import axios from "axios";
-import { VerticalGraph } from "./VerticalGraph";
-import GeneralContext from "./GeneralContext";
+import { VerticalGraph } from "../Charts/VerticalGraph";
+import GeneralContext from "../../Context/GeneralContext";
 
 const Holdings = ({ tick }) => {
   const [allHoldings, setAllHoldings] = useState([]);

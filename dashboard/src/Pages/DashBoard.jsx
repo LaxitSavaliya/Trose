@@ -1,14 +1,14 @@
 import { useState, useEffect } from "react";
 import { Route, Routes } from "react-router-dom";
 
-import Apps from "./Apps";
-import Funds from "./Funds";
-import Holdings from "./Holdings";
-import Orders from "./Orders";
-import Positions from "./Positions";
-import Summary from "./Summary";
-import WatchList from "./WatchList";
-import { GeneralContextProvider } from "./GeneralContext";
+import Apps from "../components/DashBoard/Apps";
+import Funds from "../components/DashBoard/Funds";
+import Holdings from "../components/DashBoard/Holdings";
+import Orders from "../components/DashBoard/Orders";
+import Positions from "../components/DashBoard/Positions";
+import Summary from "../components/DashBoard/Summary";
+import WatchList from "../components/DashBoard/WatchList";
+import { GeneralContextProvider } from "../Context/GeneralContext";
 
 const Dashboard = () => {
   const [tick1s, setTick1s] = useState(0);

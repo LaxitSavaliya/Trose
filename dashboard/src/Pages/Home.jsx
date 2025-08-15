@@ -1,5 +1,6 @@
 import DashBoard from "./DashBoard";
-import TopBar from "./TopBar";
+import TopBar from "../components/DashBoard/TopBar";
+import "../Assets/Styles/global.css"
 
 const Home = () => {
   return (

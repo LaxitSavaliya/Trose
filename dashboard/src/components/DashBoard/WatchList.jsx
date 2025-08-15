@@ -6,8 +6,8 @@ import KeyboardArrowUpIcon from "@mui/icons-material/KeyboardArrowUp";
 import EqualizerIcon from "@mui/icons-material/Equalizer";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import { Tooltip } from "@mui/material";
-import GeneralContext from "./GeneralContext";
-import { DoughnutChart } from "./DoughnoutChart";
+import GeneralContext from "../../Context/GeneralContext";
+import { DoughnutChart } from "../Charts/DoughnoutChart";
 
 function WatchList({ tick }) {
   const [allStock, setAllStock] = useState([]);

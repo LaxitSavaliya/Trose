@@ -3,6 +3,7 @@ import PieChartOutlineIcon from "@mui/icons-material/PieChartOutline";
 import DataUsageIcon from "@mui/icons-material/DataUsage";
 import BusinessCenterIcon from "@mui/icons-material/BusinessCenter";
 import axios from "axios";
+import invite from "../../Assets/Images/invite.png";
 
 const Summary = ({ tick }) => {
   const [allHoldings, setAllHoldings] = useState([]);
@@ -139,7 +140,7 @@ const Summary = ({ tick }) => {
         <div className="col-lg-4 text-center">
           <a href="#">
             <img
-              src="Screenshot 2025-07-23 152205.png"
+              src={invite}
               alt="Invite Reward"
               style={{ width: "95%" }}
             />

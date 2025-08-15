@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
-import BuyActionWindow from "./BuyActionWindow";
-import SellActionWindow from "./SellActionWindow";
+import BuyActionWindow from "../components/Actions/BuyActionWindow";
+import SellActionWindow from "../components/Actions/SellActionWindow";
 
 const GeneralContext = React.createContext(null);
 
