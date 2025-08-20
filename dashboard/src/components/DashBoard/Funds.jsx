@@ -144,7 +144,7 @@ const Funds = () => {
 
       <div className="text-center mt-4">
         <p className="mb-2">You don't have a commodity account</p>
-        <Link to="#" className="btn btn-outline-primary">Open Account</Link>
+        <Link to="#" className="btn open-account">Open Account</Link>
       </div>
     </div>
   );
